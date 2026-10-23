@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gasoil y diésel liviano</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<style>
+  /* Layout: app de una columna, encabezado grande por pantalla y navegación flotante inferior; en pantallas anchas la torre y la ficha van lado a lado. */
+  :root {
+    --olive: #756F4B;
+    --sage: #A9A27C;
+    --sand: #E0D8B0;
+    --cream: #F0EBD7;
+    --moss: #867416;
+    --gold: #BEA74B;
+    --butter: #F8DE7E;
+    --pale: #FEEEB8;
+    --ink: #2F2C17;
+    --ink-soft: #5A5638;
+    --paper: #FBF8EA;
+    --font-display: 'Inclusive Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-body: 'Inclusive Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color-scheme: light;
+  }
+  body {
+    background-color: var(--cream);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .46 0 0 0 0 .44 0 0 0 0 .29 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+      radial-gradient(90% 50% at 0% 0%, rgba(254,238,184,.9) 0%, rgba(254,238,184,0) 70%),
+      radial-gradient(70% 45% at 100% 100%, rgba(248,222,126,.35) 0%, rgba(248,222,126,0) 70%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0;
+  }
+  .font-display { font-family: var(--font-display); letter-spacing: 0; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--moss); }
+  button { font-family: inherit; }
+  :focus-visible { outline: 3px solid var(--moss); outline-offset: 2px; border-radius: 8px; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .soft-shadow { box-shadow: 0 1px 0 rgba(255,255,255,.7) inset, 0 16px 30px -20px rgba(117,111,75,.65); }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+  @keyframes dotin { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pillpop { 0% { transform: scale(.92); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
+  @keyframes breathe { 0%, 100% { opacity: 0; } 50% { opacity: .6; } }
+  @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  @keyframes flow { to { stroke-dashoffset: -24; } }
+  @keyframes bub { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .95; } 100% { transform: translateY(var(--dy)); opacity: 0; } }
+  @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  .rise { animation: rise .45s cubic-bezier(.2,.8,.2,1) both; }
+  .dot { animation: dotin .35s cubic-bezier(.2,.9,.3,1.3) both; }
+  .pill-sel { transform-box: fill-box; transform-origin: center; animation: pillpop .35s ease-out both; }
+  .halo { animation: breathe 2.6s ease-in-out infinite; }
+  .floaty { animation: floaty 7s ease-in-out infinite; }
+  .flow { stroke-dasharray: 6 6; animation: flow 1.1s linear infinite; }
+  .bub { animation: bub 2.4s ease-in infinite; }
+  .draw { stroke-dasharray: 1; animation: draw .9s ease-out both; }
+  .sec { cursor: pointer; }
+  .sec rect.body { transition: filter .25s ease, opacity .25s ease; }
+  .sec:hover rect.body { filter: brightness(1.07); }
+  .sec:focus-visible { outline: none; }
+  .sec:focus-visible rect.pill { stroke: var(--ink); stroke-width: 3; }
+  .lift { transition: transform .2s ease, box-shadow .2s ease; }
+  .lift:hover { transform: translateY(-2px); }
+
+  input[type=range].rng {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 12px; border-radius: 999px;
+    background: linear-gradient(to right, var(--moss) var(--p), var(--sand) var(--p)); outline: none; cursor: pointer; position: relative;
+  }
+  input[type=range].rng::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; box-sizing: border-box; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--paper); border: 6px solid var(--moss); box-shadow: 0 3px 8px rgba(47,44,23,.35);
+  }
+  input[type=range].rng::-moz-range-thumb {
+    box-sizing: border-box; width: 30px; height: 30px; border-radius: 50%; background: var(--paper); border: 6px solid var(--moss); box-shadow: 0 3px 8px rgba(47,44,23,.35);
+  }
+  input[type=range].rng:focus-visible { outline: 3px solid var(--moss); outline-offset: 8px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .dot, .pill-sel, .halo, .floaty, .flow, .bub, .draw { animation: none !important; }
+    .draw { stroke-dashoffset: 0; }
+    * { transition: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+
+<style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+(function () {
+  var useState = React.useState, useEffect = React.useEffect, useRef = React.useRef;
+  var h = React.createElement;
+  var cx = function () { return Array.prototype.filter.call(arguments, Boolean).join(' '); };
+  var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
+
+  /* ---------- Iconos (trazos al estilo lucide) ---------- */
+  var ICON = {
+    flask: ['M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2', 'M8.5 2h7', 'M7 16h10'],
+    gauge: ['m12 14 4-4', 'M3.34 19a10 10 0 1 1 17.32 0'],
+    sliders: ['M21 4h-7', 'M10 4H3', 'M21 12h-9', 'M8 12H3', 'M21 20h-5', 'M12 20H3', 'M14 2v4', 'M8 10v4', 'M16 18v4'],
+    flame: ['M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z'],
+    drop: ['M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z'],
+    wind: ['M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2', 'M9.6 4.6A2 2 0 1 1 11 8H2', 'M12.6 19.4A2 2 0 1 0 14 16H2'],
+    leaf: ['M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z', 'M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12'],
+    zap: ['M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'],
+    truck: ['M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2', 'M15 18H9', 'M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14', [17, 18, 2], [7, 18, 2]],
+    thermo: ['M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z'],
+    chevron: ['m6 9 6 6 6-6'],
+    check: [[12, 12, 10], 'm9 12 2 2 4-4'],
+    alert: ['m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3', 'M12 9v4', 'M12 17h.01'],
+    info: [[12, 12, 10], 'M12 16v-4', 'M12 8h.01'],
+    reset: ['M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5'],
+    spark: ['M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z']
+  };
+  function Ico(p) {
+    var s = p.s || 22;
+    return h('svg', { width: s, height: s, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: p.sw || 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', className: p.cls, 'aria-hidden': 'true' },
+      ICON[p.n].map(function (d, i) {
+        return typeof d === 'string' ? h('path', { key: i, d: d }) : h('circle', { key: i, cx: d[0], cy: d[1], r: d[2] });
+      }));
+  }
+
+  /* ---------- Datos ---------- */
+  var FR = [
+    { id: 'gases', name: 'Gases', temp: 'menos de 40 °C', tempShort: '< 40 °C', y: 10, h: 50, fill: '#FEEEB8', n: 3, cc: 'C1–C4',
+      tag: 'La fracción más liviana', c: '1–4 átomos de carbono por molécula',
+      how: 'Suben hasta lo más alto de la torre porque solo se condensan a temperaturas muy bajas.',
+      uses: 'Gas envasado (GLP) para cocinas y garrafas, y materia prima para la industria petroquímica.' },
+    { id: 'nafta', name: 'Nafta', temp: '40–200 °C', tempShort: '40–200 °C', y: 60, h: 60, fill: '#F8DE7E', n: 8, cc: 'C5–C12',
+      tag: 'Fracción liviana', c: '5–12 átomos de carbono por molécula',
+      how: 'Se condensa en las bandejas altas de la torre por su bajo punto de ebullición.',
+      uses: 'Combustible de autos y motos, solventes y materia prima petroquímica.' },
+    { id: 'querosene', name: 'Querosene', temp: '150–250 °C', tempShort: '150–250 °C', y: 120, h: 62, fill: '#E0D8B0', n: 12, cc: 'C9–C16',
+      tag: 'Fracción intermedia liviana', c: '9–16 átomos de carbono por molécula',
+      how: 'Se recoge en la zona media-alta de la torre, antes que el gasoil.',
+      uses: 'Combustible de aviones (turbosina), estufas y lámparas.' },
+    { id: 'gasoil', name: 'Gasoil', temp: '250–350 °C', tempShort: '250–350 °C', y: 182, h: 84, fill: '#867416', n: 15, cc: 'C10–C20',
+      tag: 'Fracción media del petróleo', c: '10–20 átomos de carbono por molécula',
+      how: 'Se obtiene mediante destilación fraccionada',
+      uses: 'Se utiliza principalmente en motores diésel, camiones, maquinaria agrícola y embarcaciones.' },
+    { id: 'fuel', name: 'Fuel Oil', temp: '350–400 °C', tempShort: '350–400 °C', y: 266, h: 66, fill: '#BEA74B', n: 19, more: true, cc: 'C20–C70',
+      tag: 'Fracción pesada', c: '20–70 átomos de carbono por molécula',
+      how: 'Se recoge en las bandejas bajas, donde solo llegan las moléculas más grandes en forma de vapor.',
+      uses: 'Calderas industriales, centrales térmicas y grandes barcos.' },
+    { id: 'residuo', name: 'Residuo', temp: 'más de 400 °C', tempShort: '> 400 °C', y: 332, h: 98, fill: '#A9A27C', n: 22, more: true, cc: 'más de C70',
+      tag: 'La fracción más pesada', c: 'Más de 70 átomos de carbono por molécula',
+      how: 'No se evapora: cae al fondo de la torre y se procesa aparte.',
+      uses: 'Asfalto para rutas, coque y materia prima para otros procesos de refinación.' }
+  ];
+
+  var PROPS = [
+    { id: 'cetano', name: 'Número de cetano', icon: 'flame', val: '46–55', chip: 'Valor habitual',
+      text: 'Indica la facilidad con la que el combustible se enciende dentro de un motor diésel.',
+      more: 'A mayor cetano, el encendido es más rápido y el motor funciona más suave y silencioso.',
+      viz: { k: 'range', axis: [20, 70], range: [46, 55], unit: '', left: 'Encendido lento', right: 'Encendido rápido', cap: 'Rango habitual del gasoil: 46–55' } },
+    { id: 'densidad', name: 'Densidad', icon: 'drop', val: '820–860 kg/m³', chip: 'A 15 °C',
+      text: 'Es la masa de combustible que cabe en un litro, medida a 15 °C.',
+      more: 'El gasoil es más denso que la nafta, así que cada litro contiene más energía.',
+      viz: { k: 'range', axis: [700, 900], range: [820, 860], unit: ' kg/m³', left: 'Más liviano', right: 'Más pesado', cap: 'Rango habitual del gasoil: 820–860 kg/m³' } },
+    { id: 'volatilidad', name: 'Volatilidad', icon: 'wind', val: 'Baja', chip: 'Destila entre 180 y 360 °C',
+      text: 'Mide qué tan fácil se evapora el combustible.',
+      more: 'El gasoil se destila entre unos 180 y 360 °C, por eso es poco volátil y más seguro de almacenar que la nafta.',
+      viz: { k: 'range', axis: [0, 400], range: [180, 360], unit: ' °C', left: 'Se evapora fácil', right: 'Se evapora con dificultad', cap: 'Intervalo de destilación del gasoil: 180–360 °C' } },
+    { id: 'azufre', name: 'Contenido de azufre', icon: 'leaf', val: 'Hasta ≤ 10 ppm', chip: 'Ultra bajo azufre',
+      text: 'Durante el refinado se realizan procesos de desulfuración para reducir los compuestos sulfurados.',
+      more: 'Menos azufre significa menos óxidos de azufre en los gases de escape.',
+      viz: { k: 'bars', max: 500, unit: ' ppm', items: [{ l: 'Gasoil de menor exigencia', v: 500 }, { l: 'Ultra bajo azufre', v: 10, strong: true }], cap: 'Valores de referencia aproximados' } },
+    { id: 'energia', name: 'Poder energético', icon: 'zap', val: '≈ 36 MJ/L', chip: 'Por litro',
+      text: 'Es la energía que libera el combustible al quemarse.',
+      more: 'Un litro de gasoil entrega más energía que uno de nafta, por eso los motores diésel tienden a rendir más kilómetros por litro.',
+      viz: { k: 'bars', max: 40, unit: ' MJ/L', items: [{ l: 'Gasoil', v: 36, strong: true }, { l: 'Nafta', v: 32 }], cap: 'Valores típicos aproximados' } }
+  ];
+
+  /* ---------- Piezas comunes ---------- */
+  function Brand() {
+    return h('div', { className: 'flex items-center justify-between gap-3 pt-5 pb-4' },
+      h('div', { className: 'flex items-center gap-2.5 min-w-0' },
+        h('span', { className: 'grid place-items-center rounded-xl flex-none', style: { width: 40, height: 40, background: 'linear-gradient(135deg, var(--moss), var(--olive))', color: '#FFFAE6', boxShadow: '0 8px 16px -8px rgba(117,111,75,.9)' } }, h(Ico, { n: 'drop', s: 21, sw: 2 })),
+        h('span', { className: 'font-bold leading-tight truncate' }, 'Gasoil y diésel liviano')),
+      h('span', { className: 'flex-none text-xs font-semibold rounded-full px-3 py-1.5', style: { background: 'var(--sand)', color: 'var(--ink-soft)' } }, 'Guía interactiva'));
+  }
+
+  function Hero(p) {
+    return h('section', { className: 'rise relative overflow-hidden rounded-[30px] px-6 py-7 sm:px-10 sm:py-10', style: { background: 'linear-gradient(135deg, #FEEEB8 0%, #F8DE7E 100%)', border: '1.5px solid var(--sand)', boxShadow: '0 20px 36px -26px rgba(117,111,75,.9)' } },
+      h('svg', { className: 'floaty absolute pointer-events-none', style: { right: -44, top: -54 }, width: 280, height: 280, viewBox: '0 0 280 280', 'aria-hidden': 'true' },
+        h('circle', { cx: 140, cy: 140, r: 130, fill: 'none', stroke: '#BEA74B', strokeOpacity: 0.5, strokeWidth: 2 }),
+        h('circle', { cx: 140, cy: 140, r: 96, fill: '#BEA74B', fillOpacity: 0.22 }),
+        h('circle', { cx: 140, cy: 140, r: 58, fill: '#867416', fillOpacity: 0.2 })),
+      h('div', { className: 'absolute pointer-events-none', style: { right: 26, bottom: 18, color: '#756F4B', opacity: 0.55 }, 'aria-hidden': 'true' }, h(Ico, { n: p.icon, s: 88, sw: 1.2 })),
+      h('div', { className: 'relative' },
+        h('div', { className: 'flex items-center gap-2.5' },
+          h('span', { className: 'text-xs font-bold tracking-[0.14em] uppercase', style: { color: 'var(--ink-soft)' } }, p.eyebrow),
+          h('span', { className: 'tnum text-xs font-bold rounded-full px-2.5 py-0.5', style: { background: 'rgba(255,250,230,.75)', color: 'var(--ink)' } }, p.step + ' / 03')),
+        h('h1', { className: 'font-display text-[2.2rem] sm:text-[3rem] leading-[1.04] mt-3 font-bold text-balance max-w-[14ch] sm:max-w-[18ch]' }, p.title),
+        h('p', { className: 'mt-3 text-[15px] sm:text-[17px] max-w-[42ch]', style: { color: 'var(--ink-soft)' } }, p.sub)));
+  }
+
+  function Tile(p) {
+    return h('span', { className: 'flex-none grid place-items-center rounded-2xl', style: { width: p.size || 44, height: p.size || 44, background: p.bg || 'var(--pale)', color: p.fg || 'var(--moss)' } }, h(Ico, { n: p.n, s: p.is || 22 }));
+  }
+
+  function CTA(p) {
+    return h('div', { className: 'mt-9 flex justify-center' },
+      h('button', {
+        type: 'button', onClick: p.onClick,
+        className: 'lift w-full sm:w-auto sm:min-w-[340px] rounded-[22px] px-8 py-4 text-lg font-bold tracking-wide transition active:scale-[.97]',
+        style: { background: 'linear-gradient(135deg, var(--moss), var(--olive))', color: '#FFFAE6', boxShadow: '0 14px 28px -10px rgba(117,111,75,.8), inset 0 1px 0 rgba(255,255,255,.28)' }
+      }, p.children));
+  }
+
+  /* ---------- Pantalla 1: torre ---------- */
+  var BUB_X = [112, 128, 146, 162, 180, 196];
+
+  function Tower(p) {
+    var els = [];
+    els.push(h('defs', { key: 'd' },
+      h('clipPath', { id: 'tw-clip' }, h('rect', { x: 100, y: 10, width: 110, height: 420, rx: 16 })),
+      h('linearGradient', { id: 'cyl', x1: 0, x2: 1, y1: 0, y2: 0 },
+        h('stop', { offset: '0%', stopColor: '#2F2C17', stopOpacity: 0.22 }),
+        h('stop', { offset: '28%', stopColor: '#FFFFFF', stopOpacity: 0.32 }),
+        h('stop', { offset: '62%', stopColor: '#FFFFFF', stopOpacity: 0 }),
+        h('stop', { offset: '100%', stopColor: '#2F2C17', stopOpacity: 0.24 })),
+      h('linearGradient', { id: 'heat', x1: 0, x2: 0, y1: 0, y2: 1 },
+        h('stop', { offset: '0%', stopColor: '#F8DE7E' }),
+        h('stop', { offset: '100%', stopColor: '#756F4B' }))));
+
+    // escala de temperatura
+    els.push(h('rect', { key: 'heat', x: 89, y: 16, width: 6, height: 408, rx: 3, fill: 'url(#heat)' }));
+
+    // horno y entrada de crudo
+    els.push(h('g', { key: 'feed' },
+      h('text', { x: 2, y: 302, fontSize: 11.5, fontWeight: 700, fill: '#2F2C17' }, 'Crudo calentado'),
+      h('line', { x1: 36, x2: 100, y1: 327, y2: 327, stroke: '#756F4B', strokeWidth: 7, strokeLinecap: 'round' }),
+      h('line', { className: 'flow', x1: 40, x2: 98, y1: 327, y2: 327, stroke: '#F8DE7E', strokeWidth: 2.5 }),
+      h('rect', { x: 2, y: 310, width: 36, height: 34, rx: 10, fill: '#F8DE7E', stroke: '#756F4B', strokeWidth: 2 }),
+      h('g', { transform: 'translate(10.5 317.5) scale(.8)' },
+        h('path', { d: ICON.flame[0], fill: 'none', stroke: '#867416', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' })),
+      h('text', { x: 2, y: 360, fontSize: 11.5, fill: '#5A5638' }, '≈ 400 °C')));
+
+    FR.forEach(function (s) {
+      var on = p.sel === s.id;
+      var dark = s.id === 'gasoil';
+      var cy = s.y + s.h / 2;
+      var trays = Math.max(1, Math.round(s.h / 24));
+      var lines = [];
+      for (var i = 1; i <= trays; i++) {
+        var yy = s.y + (s.h * i) / (trays + 1);
+        lines.push(h('line', { key: 't' + i, x1: 104, x2: 206, y1: yy, y2: yy, stroke: dark ? 'rgba(255,250,230,.38)' : 'rgba(47,44,23,.22)', strokeWidth: 1.5, strokeDasharray: '5 4' }));
+      }
+      var bubbles = [];
+      if (on) {
+        for (var b = 0; b < BUB_X.length; b++) {
+          bubbles.push(h('circle', { key: 'b' + b, className: 'bub', cx: BUB_X[b], cy: s.y + s.h - 8, r: 2.5 + (b % 3), fill: dark ? '#FEEEB8' : '#FFFFFF', fillOpacity: 0.9, style: { '--dy': (-(s.h - 18)) + 'px', animationDelay: (b * 0.38) + 's' } }));
+        }
+      }
+      els.push(h('g', {
+        key: s.id, className: 'sec', role: 'button', tabIndex: 0, 'aria-pressed': on, 'aria-label': s.name + ', ' + s.temp,
+        onClick: function () { p.onSel(s.id); },
+        onKeyDown: function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p.onSel(s.id); } }
+      },
+        h('rect', { className: 'body', x: 100, y: s.y, width: 110, height: s.h, fill: s.fill, clipPath: 'url(#tw-clip)', opacity: on ? 1 : 0.82,
+          style: on ? { filter: 'brightness(1.1) saturate(1.1)' } : null }),
+        h('g', { clipPath: 'url(#tw-clip)' }, lines, bubbles),
+        on ? h('rect', { x: 104, y: s.y + 4, width: 102, height: s.h - 8, rx: 8, fill: 'none', stroke: dark ? '#FEEEB8' : '#2F2C17', strokeWidth: 2.5, className: 'halo' }) : null,
+        h('line', { x1: 210, x2: 222, y1: cy, y2: cy, stroke: '#756F4B', strokeWidth: 2 }),
+        h('rect', { className: cx('pill', on ? 'pill-sel' : ''), x: 222, y: s.y + 6, width: 114, height: s.h - 12, rx: 13,
+          fill: on ? (dark ? '#756F4B' : s.fill) : (dark ? '#F8DE7E' : '#FBF8EA'),
+          stroke: on ? '#2F2C17' : (dark ? '#867416' : '#E0D8B0'), strokeWidth: on ? 2.5 : (dark ? 2.5 : 1.5) }),
+        h('circle', { cx: 237, cy: cy, r: 5.5, fill: on && dark ? '#F8DE7E' : s.fill, stroke: '#2F2C17', strokeOpacity: 0.45, strokeWidth: 1, style: { pointerEvents: 'none' } }),
+        h('text', { x: 249, y: cy - 2, fontSize: 14, fontWeight: 700, fill: on && dark ? '#FFFAE6' : '#2F2C17', style: { pointerEvents: 'none' } }, s.name),
+        h('text', { x: 249, y: cy + 14, fontSize: 11.5, fill: on && dark ? '#FEEEB8' : '#5A5638', style: { pointerEvents: 'none' } }, s.tempShort)));
+    });
+
+    // brillo cilíndrico, contorno y remates
+    els.push(h('rect', { key: 'cyl', x: 100, y: 10, width: 110, height: 420, rx: 16, fill: 'url(#cyl)', style: { pointerEvents: 'none' } }));
+    els.push(h('rect', { key: 'out', x: 100, y: 10, width: 110, height: 420, rx: 16, fill: 'none', stroke: '#756F4B', strokeWidth: 3.5, style: { pointerEvents: 'none' } }));
+    els.push(h('rect', { key: 'cap', x: 140, y: 2, width: 30, height: 10, rx: 4, fill: '#756F4B', style: { pointerEvents: 'none' } }));
+    els.push(h('text', { key: 'top', x: 155, y: -1, fontSize: 11, textAnchor: 'middle', fill: '#5A5638', fontWeight: 600 }, 'más frío ↑'));
+    els.push(h('text', { key: 'bot', x: 155, y: 444, fontSize: 11, textAnchor: 'middle', fill: '#5A5638', fontWeight: 600 }, 'más caliente ↓'));
+
+    return h('svg', { viewBox: '0 -10 340 462', className: 'w-full max-w-[420px] mx-auto block select-none', role: 'group', 'aria-label': 'Torre de destilación fraccionada' }, els);
+  }
+
+  function Chain(p) {
+    var n = p.n, W = 336, H = 70;
+    var step = Math.min(34, (W - 60) / (n - 1));
+    var total = step * (n - 1);
+    var x0 = (W - total) / 2 - (p.more ? 8 : 0);
+    var pts = [], i;
+    for (i = 0; i < n; i++) pts.push([x0 + i * step, i % 2 ? 48 : 22]);
+    var d = 'M' + pts.map(function (q) { return q[0].toFixed(1) + ' ' + q[1]; }).join(' L');
+    var line = p.dark ? '#F8DE7E' : '#867416';
+    return h('svg', { viewBox: '0 0 ' + W + ' ' + H, className: 'w-full block', role: 'img', 'aria-label': 'Esquema de una cadena de ' + (p.more ? 'muchos' : n) + ' átomos de carbono' },
+      h('path', { d: d, pathLength: 1, className: 'draw', fill: 'none', stroke: line, strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }),
+      pts.map(function (q, k) {
+        return h('circle', { key: k, className: 'dot', cx: q[0], cy: q[1], r: 6.5, fill: p.dark ? '#867416' : '#FEEEB8', stroke: line, strokeWidth: 2.5, style: { animationDelay: (k * 30) + 'ms', transformBox: 'fill-box', transformOrigin: 'center' } });
+      }),
+      p.more ? h('text', { x: pts[n - 1][0] + 20, y: 44, fontSize: 22, fontWeight: 700, fill: line }, '…') : null);
+  }
+
+  function InfoBlock(p) {
+    var g = p.g;
+    return h('div', { className: 'flex items-start gap-3' },
+      h(Tile, { n: p.n, size: 40, is: 20, bg: g ? 'rgba(254,238,184,.2)' : 'var(--pale)', fg: g ? '#F8DE7E' : 'var(--moss)' }),
+      h('div', { className: 'min-w-0' },
+        h('p', { className: 'eyebrow', style: { color: g ? '#F8DE7E' : 'var(--moss)' } }, p.label),
+        h('p', { className: 'mt-0.5 leading-snug' }, p.text)));
+  }
+
+  function FractionCard(p) {
+    var f = p.f, g = f.id === 'gasoil';
+    return h('article', {
+      className: 'rise rounded-[28px] p-5 sm:p-7',
+      style: g ? { background: 'radial-gradient(120% 90% at 100% 0%, rgba(134,116,22,.95), rgba(117,111,75,0) 62%), #756F4B', color: '#FFFAE6', boxShadow: '0 24px 40px -22px rgba(117,111,75,.95)', border: '2px solid var(--moss)' }
+               : { background: 'var(--paper)', color: 'var(--ink)', border: '1.5px solid var(--sand)', boxShadow: '0 16px 30px -22px rgba(117,111,75,.65)' },
+      'aria-live': 'polite'
+    },
+      g ? h('span', { className: 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold tracking-wider uppercase mb-3', style: { background: 'var(--butter)', color: 'var(--ink)' } }, h(Ico, { n: 'spark', s: 14, sw: 2 }), 'Fracción protagonista') : null,
+      h('h2', { className: 'font-display text-[2.2rem] font-bold leading-none' }, f.name),
+      h('p', { className: 'text-lg font-semibold mt-1.5', style: g ? { color: '#FEEEB8' } : { color: 'var(--ink-soft)' } }, f.tag),
+      h('div', { className: 'mt-4 rounded-2xl px-3 pt-3 pb-1', style: g ? { background: 'rgba(47,44,23,.22)' } : { background: 'rgba(254,238,184,.6)' } },
+        h(Chain, { n: f.n, more: f.more, dark: g }),
+        h('p', { className: 'text-center text-xs font-bold tracking-wide pb-2', style: { color: g ? '#FEEEB8' : 'var(--ink-soft)' } }, 'Cadena de carbono (esquema) · ' + f.cc)),
+      h('div', { className: 'flex flex-wrap gap-2 mt-4' },
+        h('span', { className: 'rounded-xl px-3 py-1.5 text-sm font-semibold', style: g ? { background: 'var(--moss)', color: '#FFFAE6' } : { background: 'var(--pale)', color: 'var(--ink)' } }, f.c),
+        h('span', { className: 'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold', style: g ? { background: 'rgba(255,250,230,.16)', color: '#FFFAE6' } : { background: 'var(--sand)', color: 'var(--ink)' } }, h(Ico, { n: 'thermo', s: 15, sw: 2 }), 'Se separa a ' + f.temp)),
+      h('div', { className: 'grid gap-4 mt-5' },
+        h(InfoBlock, { n: 'flask', label: 'Cómo se obtiene', text: f.how + (f.how.slice(-1) === '.' ? '' : '.'), g: g }),
+        h(InfoBlock, { n: 'truck', label: 'Para qué se usa', text: f.uses, g: g })));
+  }
+
+  function Refinacion(p) {
+    var st = useState('gasoil'), sel = st[0], setSel = st[1];
+    var f = FR.filter(function (x) { return x.id === sel; })[0];
+    return h('div', null,
+      h(Hero, { step: '01', icon: 'flask', eyebrow: 'Del crudo al combustible', title: 'Refinación del petróleo', sub: 'La torre de destilación separa el petróleo en fracciones según su punto de ebullición. Tocá una sección para conocerla.' }),
+      h('div', { className: 'grid gap-6 md:grid-cols-2 items-start mt-6' },
+        h('div', { className: 'min-w-0 rounded-[28px] p-3 sm:p-5 soft-shadow rise', style: { background: 'linear-gradient(180deg, rgba(254,238,184,.7), rgba(251,248,234,.9))', border: '1.5px solid var(--sand)', animationDelay: '80ms' } },
+          h(Tower, { sel: sel, onSel: setSel }),
+          h('p', { className: 'text-center text-sm mt-2 px-2', style: { color: 'var(--ink-soft)' } }, 'Cuanto más larga la cadena de carbono, más alta la temperatura de ebullición.')),
+        h('div', { className: 'min-w-0' }, h(FractionCard, { f: f, key: f.id }))),
+      h(CTA, { onClick: function () { p.go('propiedades'); } }, 'Explorar propiedades →'));
+  }
+
+  /* ---------- Pantalla 2: propiedades ---------- */
+  function RangeViz(v) {
+    var a = v.axis[0], b = v.axis[1], span = b - a;
+    var left = ((v.range[0] - a) / span) * 100, width = ((v.range[1] - v.range[0]) / span) * 100;
+    return h('div', { className: 'mt-5' },
+      h('div', { className: 'relative h-5 rounded-full', style: { background: 'var(--sand)' } },
+        h('div', { className: 'absolute top-0 bottom-0 rounded-full', style: { left: left + '%', width: width + '%', background: 'linear-gradient(90deg, var(--gold), var(--moss))', boxShadow: '0 4px 10px -4px rgba(134,116,22,.8)' } })),
+      h('div', { className: 'flex justify-between text-xs mt-1.5 tnum', style: { color: 'var(--ink-soft)' } },
+        h('span', null, a + v.unit), h('span', null, b + v.unit)),
+      h('div', { className: 'flex justify-between gap-3 text-xs font-bold mt-1' },
+        h('span', null, '← ' + v.left), h('span', { className: 'text-right' }, v.right + ' →')),
+      h('p', { className: 'text-sm mt-3 font-semibold', style: { color: 'var(--moss)' } }, v.cap));
+  }
+
+  function BarsViz(v) {
+    return h('div', { className: 'mt-5 grid gap-3' },
+      v.items.map(function (it) {
+        return h('div', { key: it.l },
+          h('div', { className: 'flex justify-between text-sm font-semibold mb-1' },
+            h('span', null, it.l), h('span', { className: 'tnum' }, it.v + v.unit)),
+          h('div', { className: 'h-5 rounded-full overflow-hidden', style: { background: 'var(--sand)' } },
+            h('div', { className: 'h-full rounded-full', style: { width: Math.max(2.5, (it.v / v.max) * 100) + '%', background: it.strong ? 'linear-gradient(90deg, var(--olive), var(--moss))' : 'linear-gradient(90deg, var(--sage), var(--gold))', transition: 'width .5s ease' } })));
+      }),
+      h('p', { className: 'text-sm font-semibold', style: { color: 'var(--moss)' } }, v.cap));
+  }
+
+  function Viz(v) { return v.k === 'range' ? RangeViz(v) : BarsViz(v); }
+
+  function PropCard(p) {
+    var o = p.open, d = p.d;
+    return h('div', { className: 'rise overflow-hidden rounded-[24px] transition', style: { animationDelay: (p.i * 60) + 'ms', background: o ? 'linear-gradient(180deg, var(--paper), var(--pale))' : 'rgba(251,248,234,.8)', border: '1.5px solid ' + (o ? 'var(--moss)' : 'var(--sand)'), boxShadow: o ? '0 20px 34px -22px rgba(117,111,75,.85)' : '0 8px 18px -16px rgba(117,111,75,.6)' } },
+      h('button', { type: 'button', id: 'prop-' + d.id, 'aria-expanded': o, 'aria-controls': 'panel-' + d.id, onClick: p.onToggle, className: 'w-full flex items-center gap-4 p-4 text-left' },
+        h(Tile, { n: d.icon, size: 52, is: 26, bg: o ? 'linear-gradient(135deg, var(--moss), var(--olive))' : 'var(--pale)', fg: o ? '#FFFAE6' : 'var(--moss)' }),
+        h('span', { className: 'min-w-0 flex-1' },
+          h('span', { className: 'block font-display text-[1.2rem] font-bold leading-snug' }, d.name),
+          h('span', { className: 'block text-sm tnum', style: { color: 'var(--ink-soft)' } }, d.chip)),
+        h('span', { className: 'flex-none grid place-items-center rounded-full', style: { width: 34, height: 34, background: o ? 'var(--moss)' : 'var(--sand)', color: o ? '#FFFAE6' : 'var(--ink)' } },
+          h(Ico, { n: 'chevron', cls: 'transition-transform ' + (o ? 'rotate-180' : ''), s: 20, sw: 2.2 }))),
+      o ? h('div', { id: 'panel-' + d.id, role: 'region', 'aria-labelledby': 'prop-' + d.id, className: 'rise px-5 pb-6' },
+        h('p', { className: 'eyebrow' }, 'Valor típico'),
+        h('p', { className: 'font-display font-bold tnum leading-none mt-1', style: { fontSize: '2.6rem', color: 'var(--moss)' } }, d.val),
+        h('p', { className: 'text-[17px] font-semibold leading-snug mt-4' }, d.text),
+        h('p', { className: 'mt-2', style: { color: 'var(--ink-soft)' } }, d.more),
+        Viz(d.viz)) : null);
+  }
+
+  function Compare() {
+    var box = { background: 'var(--paper)', border: '1.5px solid var(--sand)' };
+    return h('section', { className: 'mt-12' },
+      h('p', { className: 'eyebrow' }, 'Frente a frente'),
+      h('h2', { className: 'font-display text-[2rem] font-bold leading-tight mt-1' }, 'Gasoil vs. nafta'),
+      h('div', { className: 'flex gap-4 mt-2 text-sm font-semibold' },
+        h('span', { className: 'inline-flex items-center gap-1.5' }, h('span', { className: 'inline-block rounded-full', style: { width: 12, height: 12, background: 'var(--moss)' } }), 'Gasoil'),
+        h('span', { className: 'inline-flex items-center gap-1.5' }, h('span', { className: 'inline-block rounded-full', style: { width: 12, height: 12, background: 'var(--gold)' } }), 'Nafta')),
+      h('div', { className: 'grid gap-4 md:grid-cols-2 mt-4' },
+        h('div', { className: 'min-w-0 rounded-[24px] p-5 soft-shadow', style: box },
+          h('div', { className: 'flex items-center gap-3' }, h(Tile, { n: 'drop', size: 42, is: 21 }),
+            h('div', null, h('h3', { className: 'font-bold text-lg leading-tight' }, 'Densidad'), h('p', { className: 'text-sm', style: { color: 'var(--ink-soft)' } }, 'Valores típicos a 15 °C'))),
+          h('div', { className: 'mt-5 grid gap-3' },
+            [{ l: 'Gasoil', v: 840, c: 'linear-gradient(90deg, var(--olive), var(--moss))' }, { l: 'Nafta', v: 740, c: 'linear-gradient(90deg, var(--sage), var(--gold))' }].map(function (it) {
+              return h('div', { key: it.l },
+                h('div', { className: 'flex justify-between text-sm font-semibold mb-1' }, h('span', null, it.l), h('span', { className: 'tnum' }, it.v + ' kg/m³')),
+                h('div', { className: 'h-5 rounded-full overflow-hidden', style: { background: 'var(--sand)' } }, h('div', { className: 'h-full rounded-full', style: { width: (it.v / 900 * 100) + '%', background: it.c } })));
+            })),
+          h('p', { className: 'text-sm font-semibold mt-4', style: { color: 'var(--moss)' } }, 'El gasoil es más denso: más energía por litro.')),
+        h('div', { className: 'min-w-0 rounded-[24px] p-5 soft-shadow', style: box },
+          h('div', { className: 'flex items-center gap-3' }, h(Tile, { n: 'wind', size: 42, is: 21 }),
+            h('div', null, h('h3', { className: 'font-bold text-lg leading-tight' }, 'Volatilidad'), h('p', { className: 'text-sm', style: { color: 'var(--ink-soft)' } }, 'Intervalo de ebullición aproximado'))),
+          h('div', { className: 'mt-5 grid gap-3' },
+            [{ l: 'Gasoil', r: [180, 360], c: 'linear-gradient(90deg, var(--olive), var(--moss))' }, { l: 'Nafta', r: [30, 200], c: 'linear-gradient(90deg, var(--sage), var(--gold))' }].map(function (it) {
+              return h('div', { key: it.l },
+                h('div', { className: 'flex justify-between text-sm font-semibold mb-1' }, h('span', null, it.l), h('span', { className: 'tnum' }, it.r[0] + '–' + it.r[1] + ' °C')),
+                h('div', { className: 'relative h-5 rounded-full', style: { background: 'var(--sand)' } },
+                  h('div', { className: 'absolute top-0 bottom-0 rounded-full', style: { left: (it.r[0] / 400 * 100) + '%', width: ((it.r[1] - it.r[0]) / 400 * 100) + '%', background: it.c } })));
+            }),
+            h('div', { className: 'flex justify-between text-xs tnum', style: { color: 'var(--ink-soft)' } }, ['0', '100', '200', '300', '400 °C'].map(function (t) { return h('span', { key: t }, t); }))),
+          h('p', { className: 'text-sm font-semibold mt-3', style: { color: 'var(--moss)' } }, 'La nafta se evapora antes: es más volátil que el gasoil.'))));
+  }
+
+  function Propiedades(p) {
+    var st = useState('cetano'), open = st[0], setOpen = st[1];
+    return h('div', null,
+      h(Hero, { step: '02', icon: 'gauge', eyebrow: 'Gasoil y diésel liviano', title: 'Propiedades del gasoil', sub: 'Cinco características que definen cómo se comporta el combustible. Tocá una para ver qué significa.' }),
+      h('div', { className: 'grid gap-3 max-w-3xl mt-6' }, PROPS.map(function (d, i) {
+        return h(PropCard, { key: d.id, d: d, i: i, open: open === d.id, onToggle: function () { setOpen(open === d.id ? null : d.id); } });
+      })),
+      h(Compare, null),
+      h(CTA, { onClick: function () { p.go('simulador'); } }, 'Probar simulador →'));
+  }
+
+  /* ---------- Pantalla 3: simulador ---------- */
+  var IGN = ['Alta', 'Media', 'Baja'];
+  var ENV = ['Bajo', 'Medio', 'Alto'];
+
+  function evaluar(cet, sul, den) {
+    var ign = cet >= 50 ? 0 : cet >= 42 ? 1 : 2;
+    var envScore = Math.min(sul, 500) / 500 * 75 + clamp((den - 820) / 80, 0, 1) * 25;
+    var env = envScore < 25 ? 0 : envScore < 55 ? 1 : 2;
+    var ce = clamp((cet - 30) / 25, 0, 1), dd = clamp(1 - Math.abs(den - 840) / 60, 0, 1), sf = 1 - Math.min(sul, 500) / 500;
+    var perf = Math.round(45 * ce + 35 * dd + 20 * sf);
+    var tone = (ign === 2 || env === 2) ? 'warn' : (ign === 0 && env === 0) ? 'good' : 'mid';
+    var title, body = [];
+    if (tone === 'good') {
+      title = 'Buenas características de combustible';
+      body.push('Con cetano ' + cet + ' el encendido es rápido y parejo, y con ' + sul + ' ppm de azufre se generan pocas emisiones de óxidos de azufre.');
+    } else if (tone === 'warn') {
+      title = 'Atención: conviene mejorar este combustible';
+      if (ign === 2) body.push('El cetano ' + cet + ' es bajo: el combustible tarda más en encenderse y el motor puede funcionar más áspero.');
+      if (env === 2) body.push(sul >= 300 ? 'Con ' + sul + ' ppm el azufre es elevado: al quemarse genera más óxidos de azufre contaminantes.' : 'La combinación de azufre y densidad produce un impacto ambiental alto.');
+    } else {
+      title = 'Características aceptables';
+      if (ign === 1) body.push('El cetano ' + cet + ' da un encendido medio; subirlo a 50 o más lo mejora.');
+      if (env === 1) body.push('Con ' + sul + ' ppm de azufre el impacto es medio; bajarlo reduce las emisiones.');
+    }
+    if (den < 820 || den > 860) body.push('La densidad de ' + den + ' kg/m³ está fuera del rango habitual (820–860 kg/m³) y cambia la energía por litro.');
+    return { ign: ign, env: env, perf: perf, tone: tone, title: title, body: body };
+  }
+
+  function Slider(p) {
+    var span = p.max - p.min;
+    var pct = ((p.value - p.min) / span) * 100;
+    var bL = ((p.band[0] - p.min) / span), bW = ((p.band[1] - p.band[0]) / span);
+    return h('div', { className: 'rise rounded-[28px] p-5 sm:p-6 soft-shadow', style: { background: 'var(--paper)', border: '1.5px solid var(--sand)', animationDelay: (p.i * 70) + 'ms' } },
+      h('div', { className: 'flex items-center justify-between gap-3' },
+        h('div', { className: 'flex items-center gap-3 min-w-0' },
+          h(Tile, { n: p.icon, size: 44, is: 22 }),
+          h('label', { htmlFor: p.id, className: 'font-display text-[1.2rem] font-bold leading-tight' }, p.label)),
+        h('div', { className: 'text-right flex-none', 'aria-live': 'polite' },
+          h('span', { className: 'font-display font-bold tnum leading-none', style: { fontSize: '3.2rem', color: 'var(--moss)' } }, p.value),
+          p.unit ? h('span', { className: 'ml-1.5 text-base font-semibold', style: { color: 'var(--ink-soft)' } }, p.unit) : null)),
+      h('div', { className: 'mt-5' },
+        h('input', { id: p.id, type: 'range', className: 'rng', min: p.min, max: p.max, step: 1, value: p.value, style: { '--p': 'calc(15px + (100% - 30px) * ' + (pct / 100) + ')' },
+          onChange: function (e) { p.onChange(Number(e.target.value)); } }),
+        h('div', { className: 'relative h-2 mt-3 rounded-full', style: { background: 'rgba(224,216,176,.5)' }, 'aria-hidden': 'true' },
+          h('div', { className: 'absolute top-0 bottom-0 rounded-full', style: { left: 'calc(15px + (100% - 30px) * ' + bL + ')', width: 'calc((100% - 30px) * ' + bW + ')', background: 'var(--gold)' } }))),
+      h('div', { className: 'flex items-center justify-between gap-3 text-xs mt-2 tnum', style: { color: 'var(--ink-soft)' } },
+        h('span', null, p.min),
+        h('span', { className: 'inline-flex items-center gap-1.5 font-semibold' }, h('span', { className: 'inline-block rounded-full', style: { width: 10, height: 10, background: 'var(--gold)' } }), p.hint),
+        h('span', null, p.max)));
+  }
+
+  var TONE = {
+    good: { bg: 'radial-gradient(120% 100% at 100% 0%, rgba(134,116,22,.95), rgba(117,111,75,0) 60%), #756F4B', fg: '#FFFAE6', icon: 'check', sub: '#FEEEB8', bd: 'var(--moss)', chip: 'rgba(254,238,184,.2)', track: 'rgba(47,44,23,.28)', bar: '#F8DE7E' },
+    mid: { bg: 'linear-gradient(135deg, #E0D8B0, #FEEEB8)', fg: 'var(--ink)', icon: 'info', sub: 'var(--ink-soft)', bd: 'var(--sage)', chip: 'rgba(47,44,23,.08)', track: 'rgba(47,44,23,.16)', bar: 'var(--olive)' },
+    warn: { bg: 'linear-gradient(135deg, #F8DE7E, #FEEEB8)', fg: 'var(--ink)', icon: 'alert', sub: 'var(--ink-soft)', bd: 'var(--moss)', chip: 'rgba(47,44,23,.08)', track: 'rgba(47,44,23,.18)', bar: 'var(--moss)' }
+  };
+
+  function Meter(p) {
+    var segs = [0, 1, 2].map(function (i) {
+      return h('span', { key: i, className: 'h-3 flex-1 rounded-full', style: { background: i < p.n ? p.color : 'rgba(117,111,75,.22)', transition: 'background .3s' } });
+    });
+    return h('div', { className: 'flex gap-1.5 mt-3', 'aria-hidden': 'true' }, segs);
+  }
+
+  function Ring(p) {
+    var C = 2 * Math.PI * 34;
+    return h('svg', { width: 96, height: 96, viewBox: '0 0 84 84', role: 'img', 'aria-label': p.v + ' por ciento' },
+      h('circle', { cx: 42, cy: 42, r: 34, fill: 'none', stroke: 'rgba(117,111,75,.22)', strokeWidth: 9 }),
+      h('circle', { cx: 42, cy: 42, r: 34, fill: 'none', stroke: p.color, strokeWidth: 9, strokeLinecap: 'round', strokeDasharray: C, strokeDashoffset: C * (1 - p.v / 100), transform: 'rotate(-90 42 42)', style: { transition: 'stroke-dashoffset .5s ease' } }),
+      h('text', { x: 42, y: 48, textAnchor: 'middle', fontSize: 19, fontWeight: 700, fill: '#2F2C17', className: 'tnum' }, p.v + '%'));
+  }
+
+  function levelStyle(good, mid) { return good ? { bg: 'var(--sand)', bd: 'var(--olive)', c: 'var(--olive)' } : mid ? { bg: 'var(--pale)', bd: 'var(--gold)', c: 'var(--moss)' } : { bg: 'var(--butter)', bd: 'var(--moss)', c: 'var(--moss)' }; }
+
+  function Resultado(p) {
+    var r = p.r, t = TONE[r.tone];
+    var perfTone = r.perf >= 75 ? 0 : r.perf >= 50 ? 1 : 2;
+    var ls = [levelStyle(r.ign === 0, r.ign === 1), levelStyle(r.env === 0, r.env === 1), levelStyle(perfTone === 0, perfTone === 1)];
+    var cards = [
+      { emo: '🔥', label: 'Facilidad de encendido', val: IGN[r.ign], n: 3 - r.ign, st: ls[0], txt: r.ign === 0 ? 'El combustible se enciende rápido y el motor arranca suave.' : r.ign === 1 ? 'El encendido es aceptable, aunque podría ser más rápido.' : 'El encendido es lento y puede haber golpeteo en el motor.' },
+      { emo: '♻️', label: 'Impacto ambiental', val: ENV[r.env], n: r.env + 1, st: ls[1], txt: r.env === 0 ? 'Pocas emisiones de óxidos de azufre.' : r.env === 1 ? 'Las emisiones son moderadas.' : 'Las emisiones de óxidos de azufre son altas.' },
+      { emo: '⚙️', label: 'Rendimiento estimado', val: r.perf + '%', ring: true, st: ls[2], txt: perfTone === 0 ? 'Muy buen aprovechamiento de la energía.' : perfTone === 1 ? 'El aprovechamiento de la energía es intermedio.' : 'Se aprovecha poco la energía del combustible.' }
+    ];
+    return h('section', { ref: p.refEl, id: 'resultado', className: 'rise mt-10 scroll-mt-4', 'aria-live': 'polite' },
+      h('p', { className: 'eyebrow' }, 'Análisis'),
+      h('h2', { className: 'font-display text-[2rem] font-bold leading-tight mt-1' }, 'Resultado'),
+      h('div', { className: 'rounded-[28px] p-5 sm:p-7 mt-4', style: { background: t.bg, color: t.fg, border: '2px solid ' + t.bd, boxShadow: '0 22px 38px -22px rgba(117,111,75,.95)' } },
+        h('div', { className: 'flex items-start gap-4' },
+          h('span', { className: 'flex-none grid place-items-center rounded-full', style: { width: 52, height: 52, background: t.chip } }, h(Ico, { n: t.icon, s: 28, sw: 2 })),
+          h('div', { className: 'min-w-0' },
+            h('h3', { className: 'font-display text-[1.45rem] font-bold leading-snug' }, r.title),
+            r.body.map(function (b, i) { return h('p', { key: i, className: 'mt-1.5' }, b); }))),
+        h('dl', { className: 'grid grid-cols-3 gap-2.5 sm:gap-3 mt-5' },
+          [['Facilidad de encendido', IGN[r.ign]], ['Impacto ambiental', ENV[r.env]], ['Rendimiento estimado', r.perf + '%']].map(function (m) {
+            return h('div', { key: m[0], className: 'min-w-0 rounded-2xl px-3 py-3', style: { background: t.chip } },
+              h('dt', { className: 'text-xs font-semibold leading-tight', style: { color: t.sub } }, m[0]),
+              h('dd', { className: 'font-display text-[1.6rem] font-bold tnum leading-tight mt-1' }, m[1]));
+          })),
+        h('div', { className: 'mt-4' },
+          h('div', { className: 'h-4 rounded-full overflow-hidden', style: { background: t.track }, role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': r.perf, 'aria-label': 'Rendimiento estimado' },
+            h('div', { className: 'h-full rounded-full', style: { width: r.perf + '%', background: t.bar, transition: 'width .5s ease' } })))),
+      h('div', { className: 'grid gap-4 sm:grid-cols-3 mt-5' }, cards.map(function (c) {
+        return h('div', { key: c.label, className: 'min-w-0 rounded-[24px] p-4 sm:p-5 flex flex-col', style: { background: c.st.bg, border: '2px solid ' + c.st.bd, transition: 'background .3s, border-color .3s', boxShadow: '0 14px 26px -20px rgba(117,111,75,.8)' } },
+          h('div', { className: 'flex items-center gap-2.5 font-bold text-[15px] leading-tight' },
+            h('span', { className: 'grid place-items-center rounded-xl text-2xl flex-none', style: { width: 44, height: 44, background: 'rgba(255,250,230,.7)' }, 'aria-hidden': 'true' }, c.emo), c.label),
+          c.ring ? h('div', { className: 'flex items-center mt-3' }, h(Ring, { v: r.perf, color: c.st.c })) :
+            h('div', null,
+              h('p', { className: 'font-display text-[2.2rem] font-bold leading-none mt-4', style: { color: c.st.c } }, c.val),
+              h(Meter, { n: c.n, color: c.st.c })),
+          h('p', { className: 'text-sm mt-3', style: { color: 'var(--ink-soft)' } }, c.txt));
+      })));
+  }
+
+  function Simulador() {
+    var a = useState(50), cet = a[0], setCet = a[1];
+    var b = useState(20), sul = b[0], setSul = b[1];
+    var c = useState(840), den = c[0], setDen = c[1];
+    var d = useState(false), done = d[0], setDone = d[1];
+    var ref = useRef(null);
+    var r = evaluar(cet, sul, den);
+    var analizar = function () {
+      setDone(true);
+      setTimeout(function () { if (ref.current && ref.current.scrollIntoView) ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+    };
+    var reset = function () { setCet(50); setSul(20); setDen(840); };
+    return h('div', null,
+      h(Hero, { step: '03', icon: 'sliders', eyebrow: 'Probá tu propio combustible', title: 'Simulador de diésel', sub: 'Mové los controles para armar un combustible y después analizalo.' }),
+      h('div', { className: 'grid gap-4 max-w-3xl mt-6' },
+        h(Slider, { i: 0, id: 'sl-cetano', icon: 'flame', label: 'Número de cetano', value: cet, min: 30, max: 70, unit: '', band: [50, 70], hint: 'Recomendado: 50 o más', onChange: setCet }),
+        h(Slider, { i: 1, id: 'sl-azufre', icon: 'leaf', label: 'Contenido de azufre', value: sul, min: 0, max: 500, unit: 'ppm', band: [0, 50], hint: 'Recomendado: hasta 50 ppm', onChange: setSul }),
+        h(Slider, { i: 2, id: 'sl-densidad', icon: 'drop', label: 'Densidad', value: den, min: 800, max: 900, unit: 'kg/m³', band: [820, 860], hint: 'Recomendado: 820–860', onChange: setDen })),
+      h('div', { className: 'mt-9 flex flex-col items-center gap-3' },
+        h('button', { type: 'button', onClick: analizar, className: 'lift w-full max-w-md rounded-[26px] px-8 py-5 text-xl font-bold tracking-[0.08em] transition active:scale-[.97]',
+          style: { background: 'linear-gradient(135deg, var(--moss), var(--olive))', color: '#FFFAE6', boxShadow: '0 18px 32px -12px rgba(117,111,75,.9), inset 0 1px 0 rgba(255,255,255,.28)' } }, 'ANALIZAR COMBUSTIBLE'),
+        h('button', { type: 'button', onClick: reset, className: 'inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg', style: { color: 'var(--ink-soft)' } }, h(Ico, { n: 'reset', s: 16 }), 'Volver a los valores iniciales'),
+        done ? h('p', { className: 'text-sm text-center', style: { color: 'var(--ink-soft)' } }, 'El resultado se actualiza mientras movés los controles.') : null),
+      done ? h(Resultado, { r: r, refEl: ref }) : null,
+      h('p', { className: 'mt-8 flex items-start gap-2.5 text-sm rounded-2xl p-4', style: { background: 'rgba(224,216,176,.6)', color: 'var(--ink-soft)' } },
+        h(Ico, { n: 'info', s: 18, cls: 'flex-none mt-0.5' }),
+        h('span', null, 'Simulador educativo con relaciones simplificadas. No representa un diagnóstico real de un motor ni de un combustible.')));
+  }
+
+  /* ---------- App y navegación ---------- */
+  var TABS = [
+    { id: 'refinacion', label: 'Refinación', icon: 'flask' },
+    { id: 'propiedades', label: 'Propiedades', icon: 'gauge' },
+    { id: 'simulador', label: 'Simulador', icon: 'sliders' }
+  ];
+
+  function App() {
+    var st = useState('refinacion'), tab = st[0], setTab = st[1];
+    useEffect(function () { window.scrollTo(0, 0); }, [tab]);
+    var screen = tab === 'refinacion' ? h(Refinacion, { go: setTab, key: 'r' }) : tab === 'propiedades' ? h(Propiedades, { go: setTab, key: 'p' }) : h(Simulador, { key: 's' });
+    return h('div', null,
+      h('main', { className: 'mx-auto w-full max-w-4xl pb-44' }, h(Brand, null), screen),
+      h('nav', { 'aria-label': 'Secciones', className: 'fixed left-0 right-0 bottom-0 z-20 pointer-events-none', style: { paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))', paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))', paddingRight: 'max(16px, env(safe-area-inset-right, 0px))' } },
+        h('div', { className: 'pointer-events-auto mx-auto max-w-md grid grid-cols-3 gap-1 p-1.5 rounded-[28px]', style: { background: 'rgba(251,248,234,.92)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', border: '1.5px solid var(--sand)', boxShadow: '0 18px 36px -14px rgba(117,111,75,.75)' } }, TABS.map(function (t) {
+          var on = tab === t.id;
+          return h('button', { key: t.id, type: 'button', onClick: function () { setTab(t.id); }, 'aria-current': on ? 'page' : undefined,
+            className: 'flex flex-col items-center gap-0.5 rounded-[22px] py-2.5 px-1 text-[13px] font-bold transition',
+            style: { background: on ? 'var(--butter)' : 'transparent', color: on ? 'var(--ink)' : 'var(--ink-soft)', boxShadow: on ? 'inset 0 1px 0 rgba(255,255,255,.6), 0 6px 12px -8px rgba(134,116,22,.8)' : 'none' } },
+            h(Ico, { n: t.icon, s: 24, sw: on ? 2.2 : 1.8 }), t.label);
+        }))));
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(h(App, null));
+})();
+</script>
+</body>
+</html>
